@@ -2,7 +2,7 @@ name: "Runs on a PR to main"
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     branches:
       - main
 
@@ -13,5 +13,18 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
+      - uses: actions/github-script@v3
+        id: has-single-valid-label
+        with:
+          script: |
+            const releaseLabels = ['release-major', 'release-minor', 'release-patch'];
+            const labels = context.payload.pull_request.labels;
+            const appliedReleaseLabels = labels.filter(x => releaseLabels.includes(x.name));
+            return appliedReleaseLabels.length === 1;
+
+      - name: "Verify that a single release label is applied"
+        run: ${{steps.has-single-valid-label.outputs.result}}
+
       - name: "Just testing"
-        run: echo "Hello world"
+        run: |
+          echo "${{ github.event.pull_request.head.ref }}"
